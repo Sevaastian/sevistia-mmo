@@ -1,0 +1,10 @@
+[
+    {
+        "id": "muhtarin_cayi",
+        "giver": "muhtar",
+        "title": "Muhtarın Çayı",
+        "description": "Meydandaki Muhtar'ın yanına git ve çayını al (Günde 1 kez!).",
+        "reward": 50,
+        "lastCompletedDate": ""
+    }
+]

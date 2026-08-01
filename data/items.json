@@ -1,0 +1,5 @@
+[
+    { "id": "melek_kanadi", "name": "Melek Kanadı", "price": 50, "type": "aksesuar" },
+    { "id": "siyah_gozluk", "name": "Havalı Gözlük", "price": 20, "type": "gozluk" },
+    { "id": "korsan_sapka", "name": "Korsan Şapkası", "price": 30, "type": "sapka" }
+]

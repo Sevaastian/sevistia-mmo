@@ -1,0 +1,20 @@
+[
+    {
+        "id": "muhtar",
+        "name": "Muhtar",
+        "map": "meydan",
+        "x": 600,
+        "y": 250,
+        "color": "#3498db",
+        "message": "Sevistia'ya hoş geldin evlat! Buralar daha çok gelişecek."
+    },
+    {
+        "id": "tuccar",
+        "name": "Tüccar",
+        "map": "meydan",
+        "x": 300,
+        "y": 400,
+        "color": "#e67e22",
+        "message": "Şu an satacak bir şeyim yok, sonra gel!"
+    }
+]

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sevistia Online - v0.1 Alpha</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- YÜKLEME EKRANI -->
+    <div id="loading-screen" class="screen active">
+        <h1 class="logo-text">SEVISTIA</h1>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- ANA MENÜ / GİRİŞ VE KAYIT EKRANI -->
+    <div id="main-menu" class="screen active">
+        <div class="menu-box">
+            <h1>🏰 SEVİSTİA MMO</h1>
+            <p>Karakterine giriş yap veya yeni kayıt ol!</p>
+            
+            <div class="input-group">
+                <label>Kullanıcı Adı (Nick):</label>
+                <input type="text" id="char-name" placeholder="Adını gir kanka...">
+            </div>
+
+            <div class="input-group">
+                <label>Şifre:</label>
+                <input type="password" id="char-pass" placeholder="Şifreni gir...">
+            </div>
+
+            <div class="menu-btn-group" style="display: flex; gap: 10px;">
+                <button class="main-btn" onclick="registerUser()" style="background: #3498db;">Kayıt Ol</button>
+                <button class="main-btn" onclick="loginUser()" style="background: #2ecc71;">Giriş Yap</button>
+            </div>
+        </div>
+    </div>
+    <!-- KARAKTER OLUŞTURMA -->
+    <div id="character-creation" class="screen hidden">
+        <div class="menu-box">
+            <h2>Karakterini Oluştur</h2>
+            <input type="text" id="char-name" placeholder="Karakter İsmi">
+            
+            <div class="options">
+                <label>Cinsiyet:</label>
+                <select id="char-gender"><option>Erkek</option><option>Kadın</option></select>
+                
+                <label>Ten Rengi:</label>
+                <input type="color" id="char-skin" value="#f1c40f">
+            </div>
+            
+            <button onclick="startGame()">Dünyaya Adım At</button>
+        </div>
+    </div>
+
+    <!-- OYUN İÇİ EKRAN -->
+    <div id="game-screen" class="screen hidden">
+        <!-- Sol Üst Bilgi Paneli -->
+        <div id="game-ui-top">
+            <div class="ui-stat">⭐ Seviye: <span id="ui-level">1</span></div>
+            <div class="ui-stat">🪙 Coin: <span id="ui-coin">100</span></div>
+            <div class="ui-stat">💎 Elmas: <span id="ui-diamond">10</span></div>
+        </div>
+
+        <!-- Sağ Üst Menü -->
+        <div id="game-ui-right">
+            <button id="cafe-btn" class="ui-btn hidden" onclick="earnCoinFromCafe()">☕ Kahve Yap (+10 Coin)</button>
+            <button onclick="toggleMarket()">🛒 Market</button>
+            <button onclick="toggleInventory()">🎒 Çanta</button>
+        </div>
+
+        <!-- YENİ: Pencereler (Modal) -->
+        <div id="market-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🛒 Sevistia Market</h2>
+                <div id="market-items" class="item-grid"></div>
+                <button class="close-btn" onclick="toggleMarket()">Kapat</button>
+            </div>
+        </div>
+
+        <div id="inventory-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>🎒 Çantam</h2>
+                <div id="inventory-items" class="item-grid"></div>
+                <button class="close-btn" onclick="toggleInventory()">Kapat</button>
+            </div>
+        </div>
+        
+        <!-- Oyun Alanı -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- YENİ: SOHBET ÇUBUĞU -->
+        <div id="chat-bar">
+            <input type="text" id="chat-input" placeholder="Bir şeyler söyle..." maxlength="60">
+            <button onclick="sendChat()">Gönder</button>
+        </div>
+    </div>
+
+    <!-- Mantık Dosyası -->
+    <script src="script.js"></script>
+</body>
+</html>
