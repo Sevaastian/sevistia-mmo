@@ -27,7 +27,8 @@ io.on('connection', (socket) => {
             x: playerData.x,
             y: playerData.y,
             currentMap: playerData.currentMap,
-            equipped: playerData.equipped
+            equipped: playerData.equipped,
+            dialogue: null
         };
         io.emit('update_players', players);
     });
@@ -42,6 +43,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    // YENİ: Canlı Sohbet (Chat) Olayı
+    socket.on('send_chat', (message) => {
+        if (players[socket.id]) {
+            players[socket.id].dialogue = { text: message, timer: 240 };
+            io.emit('update_players', players);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log(`Oyuncu ayrıldı: ${socket.id}`);
         delete players[socket.id];
@@ -50,5 +59,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(3000, () => {
-    console.log('🚀 Sevistia Multiplayer Sunucusu 3000 portunda çalışıyor!');
+    console.log('🚀 Sevistia Multiplayer Sunucusu çalışıyor!');
 });

@@ -23,7 +23,7 @@ let activeDialogue = null;
 const images = {};
 
 // YENİ: Socket.io bağlantısı (Sunucuya bağlanıyoruz)
-const socket = io('http://localhost:3000');
+const socket = io('https://sevistia-server.onrender.com');
 let onlinePlayers = {}; // Diğer oyuncuları tutacağımız liste
 
 socket.on('update_players', (playersFromServer) => {
@@ -205,7 +205,10 @@ function sendChat() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (text.length > 0) {
+        // Kendi ekranımızda göster
         playerData.dialogue = { text: text, timer: 240 };
+        // Sunucuya gönder ki diğerleri de görsün!
+        socket.emit('send_chat', text);
         input.value = ''; 
     }
 }
