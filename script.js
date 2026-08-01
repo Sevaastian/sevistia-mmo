@@ -464,16 +464,21 @@ function initGameEngine() {
     });
 
     function gameLoop() {
-        const mapInfo = mapsData[currentMap];
+    const mapInfo = mapsData[currentMap];
 
-        if (locationUI.innerText !== `📍 ${mapInfo.name}`) {
-            locationUI.innerText = `📍 ${mapInfo.name}`;
-        }
+    if (locationUI.innerText !== `📍 ${mapInfo.name}`) {
+        locationUI.innerText = `📍 ${mapInfo.name}`;
+    }
 
-        if (playerData.isMoving) {
-            const dx = playerData.targetX - playerData.x;
-            const dy = playerData.targetY - playerData.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+    // YENİ: Karakterin gökyüzüne / binaların tepesine çıkmasını engelleyen cadde sınırı!
+    if (playerData.targetY < 450) {
+        playerData.targetY = 450;
+    }
+
+    if (playerData.isMoving) {
+        const dx = playerData.targetX - playerData.x;
+        const dy = playerData.targetY - playerData.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (Math.abs(dx) > 1) {
                 playerData.facing = dx < 0 ? 'left' : 'right';
