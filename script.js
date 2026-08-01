@@ -5,6 +5,7 @@ let playerData = {
     name: "Misafir", pass: "", skinColor: "#f1c40f",
     level: 1, coin: 100, diamond: 10,
     x: 0, y: 0, targetX: 0, targetY: 0, speed: 4, isMoving: false,
+    facing: 'right', // YENİ: Karakterin baktığı yön
     dialogue: null,
     inventory: [],
     equipped: {
@@ -22,9 +23,9 @@ let currentMap = "meydan";
 let activeDialogue = null; 
 const images = {};
 
-// YENİ: Socket.io bağlantısı (Sunucuya bağlanıyoruz)
+// Socket.io bağlantısı
 const socket = io('https://sevistia-server.onrender.com');
-let onlinePlayers = {}; // Diğer oyuncuları tutacağımız liste
+let onlinePlayers = {}; 
 
 socket.on('update_players', (playersFromServer) => {
     onlinePlayers = playersFromServer;
@@ -178,12 +179,12 @@ async function startGameEngineAndAssets() {
         showScreen('game-screen');
         initGameEngine();
 
-        // Sunucuya oyuna katıldığını bildir
         socket.emit('join_game', {
             name: playerData.name,
             skinColor: playerData.skinColor,
             x: playerData.x,
             y: playerData.y,
+            facing: playerData.facing,
             currentMap: currentMap,
             equipped: playerData.equipped
         });
@@ -205,9 +206,7 @@ function sendChat() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (text.length > 0) {
-        // Kendi ekranımızda göster
         playerData.dialogue = { text: text, timer: 240 };
-        // Sunucuya gönder ki diğerleri de görsün!
         socket.emit('send_chat', text);
         input.value = ''; 
     }
@@ -408,6 +407,10 @@ function initGameEngine() {
             const dy = playerData.targetY - playerData.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
+            if (Math.abs(dx) > 1) {
+                playerData.facing = dx < 0 ? 'left' : 'right';
+            }
+
             if (distance > playerData.speed) {
                 playerData.x += (dx / distance) * playerData.speed;
                 playerData.y += (dy / distance) * playerData.speed;
@@ -417,10 +420,10 @@ function initGameEngine() {
                 playerData.isMoving = false;
             }
 
-            // Hareket ederken konumunu sunucuya bildir
             socket.emit('player_move', {
                 x: playerData.x,
                 y: playerData.y,
+                facing: playerData.facing,
                 currentMap: currentMap,
                 equipped: playerData.equipped
             });
@@ -472,10 +475,10 @@ function initGameEngine() {
                     playerData.isMoving = false;
                     clickMarker.active = false;
 
-                    // Harita değiştiğini sunucuya bildir
                     socket.emit('player_move', {
                         x: playerData.x,
                         y: playerData.y,
+                        facing: playerData.facing,
                         currentMap: currentMap,
                         equipped: playerData.equipped
                     });
@@ -509,33 +512,40 @@ function initGameEngine() {
             ctx.fillText(npc.name, npc.x, npc.y - 150);
         }
 
-        // YENİ: Diğer Çevrimiçi Oyuncuları Çiz
+        // Diğer Çevrimiçi Oyuncuları Çiz (Yön Destekli)
         for (let id in onlinePlayers) {
             const p = onlinePlayers[id];
             if (p.id !== socket.id && p.currentMap === currentMap) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                if (p.facing === 'left') {
+                    ctx.scale(-1, 1);
+                }
+
                 if (images['player']) {
-                    ctx.drawImage(images['player'], p.x - 48, p.y - 140, 96, 144);
+                    ctx.drawImage(images['player'], -48, -140, 96, 144);
                     
                     for (let type in p.equipped) {
                         const eqId = p.equipped[type];
                         if (eqId && images['item_' + eqId]) {
                             if (type === 'sapka') {
-                                ctx.drawImage(images['item_' + eqId], p.x - 30, p.y - 130, 60, 60);
+                                ctx.drawImage(images['item_' + eqId], -30, -130, 60, 60);
                             } else if (type === 'gozluk') {
-                                ctx.drawImage(images['item_' + eqId], p.x - 14, p.y - 98, 28, 28);
+                                ctx.drawImage(images['item_' + eqId], -14, -98, 28, 28);
                             }
                         }
                     }
                 } else {
                     ctx.fillStyle = p.skinColor || '#f1c40f';
-                    ctx.fillRect(p.x - 20, p.y - 20, 40, 40);
+                    ctx.fillRect(-20, -20, 40, 40);
                 }
+                ctx.restore();
+
                 ctx.fillStyle = '#f1c40f';
                 ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(p.name, p.x, p.y - 150);
 
-                // BURASI ÇOK ÖNEMLİ: Diğer oyuncunun chat balonunu çiz!
                 if (p.dialogue) {
                     drawBubble(p.dialogue.text, p.x, p.y - 180);
                     p.dialogue.timer--;
@@ -544,26 +554,33 @@ function initGameEngine() {
             }
         }
 
-        // Kendi Karakterini Çiz
+        // Kendi Karakterini Çiz (Yön Destekli)
+        ctx.save();
+        ctx.translate(playerData.x, playerData.y);
+        if (playerData.facing === 'left') {
+            ctx.scale(-1, 1);
+        }
+
         if (images['player']) {
-            ctx.drawImage(images['player'], playerData.x - 48, playerData.y - 140, 96, 144);
+            ctx.drawImage(images['player'], -48, -140, 96, 144);
             
             for (let type in playerData.equipped) {
                 const equippedId = playerData.equipped[type];
                 if (equippedId && images['item_' + equippedId]) {
                     if (type === 'sapka') {
-                        ctx.drawImage(images['item_' + equippedId], playerData.x - 30, playerData.y - 130, 60, 60);
+                        ctx.drawImage(images['item_' + equippedId], -30, -130, 60, 60);
                     } else if (type === 'gozluk') {
-                        ctx.drawImage(images['item_' + equippedId], playerData.x - 14, playerData.y - 98, 28, 28);
+                        ctx.drawImage(images['item_' + equippedId], -14, -98, 28, 28);
                     } else {
-                        ctx.drawImage(images['item_' + equippedId], playerData.x - 48, playerData.y - 140, 96, 144);
+                        ctx.drawImage(images['item_' + equippedId], -48, -140, 96, 144);
                     }
                 }
             }
         } else {
             ctx.fillStyle = playerData.skinColor;
-            ctx.fillRect(playerData.x - 20, playerData.y - 20, 40, 40);
+            ctx.fillRect(-20, -20, 40, 40);
         }
+        ctx.restore();
 
         ctx.fillStyle = 'white';
         ctx.font = 'bold 14px Arial';
