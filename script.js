@@ -5,7 +5,7 @@ let playerData = {
     name: "Misafir", pass: "", skinColor: "#f1c40f",
     level: 1, coin: 100, diamond: 10,
     x: 0, y: 0, targetX: 0, targetY: 0, speed: 4, isMoving: false,
-    facing: 'right', // YENİ: Karakterin baktığı yön
+    facing: 'right',
     dialogue: null,
     inventory: [],
     equipped: {
@@ -23,7 +23,6 @@ let currentMap = "meydan";
 let activeDialogue = null; 
 const images = {};
 
-// Socket.io bağlantısı
 const socket = io('https://sevistia-server.onrender.com');
 let onlinePlayers = {}; 
 
@@ -31,10 +30,8 @@ socket.on('update_players', (playersFromServer) => {
     onlinePlayers = playersFromServer;
 });
 
-// Kaydetme Fonksiyonu
 function saveGame() {
     if (playerData.name === "Misafir" || !playerData.name) return;
-    
     let users = JSON.parse(localStorage.getItem('sevistia_users')) || [];
     let index = users.findIndex(u => u.name === playerData.name);
     if (index !== -1) {
@@ -42,12 +39,10 @@ function saveGame() {
     } else {
         users.push(playerData);
     }
-    
     localStorage.setItem('sevistia_users', JSON.stringify(users));
     localStorage.setItem('sevistia_active_user', playerData.name);
 }
 
-// Kayıt Olma Fonksiyonu
 function registerUser() {
     const name = document.getElementById('char-name').value.trim();
     const pass = document.getElementById('char-pass').value.trim();
@@ -78,7 +73,6 @@ function registerUser() {
     startGameEngineAndAssets();
 }
 
-// Giriş Yapma Fonksiyonu
 function loginUser() {
     const name = document.getElementById('char-name').value.trim();
     const pass = document.getElementById('char-pass').value.trim();
@@ -162,12 +156,35 @@ async function startGameEngineAndAssets() {
         itemsData = await itemsRes.json();
         questsData = await questsRes.json();
 
+        // Yeni Sahil haritasını ekle (Eğer maps.json'da yoksa otomatik destekler)
+        if (!mapsData['sahil']) {
+            mapsData['sahil'] = {
+                id: "sahil",
+                name: "Güneşli Sahil",
+                backgroundColor: "#3498db",
+                spawnX: 400,
+                spawnY: 400,
+                doors: [
+                    { targetMap: "meydan", x: 50, y: 350, width: 80, height: 100, label: "Meydana Dön" }
+                ]
+            };
+        }
+
+        // Meydana Sahile açılan kapı ekleyelim (Eğer kapı yoksa)
+        if (mapsData['meydan'] && mapsData['meydan'].doors) {
+            let sahilKapisiVar = mapsData['meydan'].doors.some(d => d.targetMap === 'sahil');
+            if (!sahilKapisiVar) {
+                mapsData['meydan'].doors.push({ targetMap: "sahil", x: 700, y: 100, width: 90, height: 110, label: "Sahile Git" });
+            }
+        }
+
         const imagePromises = [
             loadImage('player', 'assets/player/player.png'),
             loadImage('muhtar', 'assets/npc/muhtar.png'),
             loadImage('tuccar', 'assets/npc/tuccar.png'),
             loadImage('bg_meydan', 'assets/maps/meydan.jpg'),
-            loadImage('bg_kafe', 'assets/maps/kafe.jpg')
+            loadImage('bg_kafe', 'assets/maps/kafe.jpg'),
+            loadImage('bg_sahil', 'assets/maps/sahil.jpg') // Sahil arkaplanı
         ];
 
         itemsData.forEach(item => {
@@ -217,14 +234,60 @@ function earnCoinFromCafe() {
         alert("Kahve yapıp satış yapmak için önce Kafe'ye gitmelisin kanka!");
         return;
     }
-
     let kazanilanCoin = 10;
     playerData.coin += kazanilanCoin;
-    
     updateUI();
-    saveGame();
-
     playerData.dialogue = { text: `☕ Kahve satıldı! +${kazanilanCoin} Coin`, timer: 120 };
+}
+
+// ==========================================
+// YENİ ÖZELLİK: PROFİL VE GÜNLÜK ÖDÜL MENÜLERİ
+// ==========================================
+function toggleProfile() {
+    let modal = document.getElementById('profile-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'profile-modal';
+        modal.className = 'modal';
+        modal.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; color:white; padding:20px; border-radius:10px; z-index:1000; text-align:center; border:2px solid #f1c40f;";
+        modal.innerHTML = `
+            <h3>Karakter Profili</h3>
+            <p>İsim: <b>${playerData.name}</b></p>
+            <p>Seviye: ${playerData.level} | Coin: 🪙 ${playerData.coin}</p>
+            <br>
+            <label>Karakter Renk / Tonu:</label><br>
+            <input type="color" id="profile-skin" value="${playerData.skinColor}"><br><br>
+            <button onclick="saveProfile()" class="buy-btn" style="background:#27ae60; color:white; padding:5px 15px; cursor:pointer;">Kaydet</button>
+            <button onclick="toggleProfile()" class="buy-btn" style="background:#c0392b; color:white; padding:5px 15px; cursor:pointer; margin-left:5px;">Kapat</button>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.classList.toggle('hidden');
+    }
+}
+
+function saveProfile() {
+    const newSkin = document.getElementById('profile-skin').value;
+    playerData.skinColor = newSkin;
+    saveGame();
+    alert("Profil güncellendi kanka!");
+    toggleProfile();
+}
+
+function claimDailyReward() {
+    const lastClaim = localStorage.getItem('sevistia_last_claim');
+    const today = new Date().toDateString();
+
+    if (lastClaim === today) {
+        alert("Bugünkü günlük ödülünü zaten aldın kanka! Yarın tekrar gel.");
+        return;
+    }
+
+    localStorage.setItem('sevistia_last_claim', today);
+    let reward = 50;
+    playerData.coin += reward;
+    updateUI();
+    alert(`🎉 Günlük ödülün alındı! +${reward} Coin kazandın!`);
 }
 
 function toggleMarket() {
@@ -285,7 +348,7 @@ function buyItem(itemId) {
         playerData.inventory.push(itemId);
         updateUI();
         saveGame();
-        alert(`${item.name} satın alındı ve kaydedildi!`);
+        alert(`${item.name} satın alındı!`);
     } else {
         alert("Yeterli coinin yok kanka!");
     }
@@ -323,6 +386,15 @@ function initGameEngine() {
     locationUI.style.fontWeight = "bold";
     locationUI.style.textShadow = "2px 2px 4px black";
     document.getElementById('game-screen').appendChild(locationUI);
+
+    // Sağ üst menüye profil ve günlük ödül butonları ekleyelim
+    const uiRight = document.getElementById('game-ui-right');
+    if (uiRight && !document.getElementById('profile-btn')) {
+        uiRight.innerHTML += `
+            <button id="profile-btn" onclick="toggleProfile()" style="margin-left:5px; padding:5px 10px; background:#e67e22; border:none; color:white; font-weight:bold; border-radius:5px; cursor:pointer;">Profil</button>
+            <button id="daily-btn" onclick="claimDailyReward()" style="margin-left:5px; padding:5px 10px; background:#f1c40f; border:none; color:black; font-weight:bold; border-radius:5px; cursor:pointer;">🎁 Günlük Ödül</button>
+        `;
+    }
 
     function resize() {
         canvas.width = window.innerWidth;
@@ -362,18 +434,14 @@ function initGameEngine() {
                 
                 if (quest) {
                     const today = new Date().toISOString().slice(0, 10);
-                    
                     if (quest.lastCompletedDate === today) {
-                        dialogueText = `${npc.name}: Bugünlük çay bitti kanka! Yarın yeniden gel.`;
+                        dialogueText = `${npc.name}: Bugünlük çay bitti kanka!`;
                     } else {
                         dialogueText = `${quest.title}: ${quest.description}`;
                         quest.lastCompletedDate = today;
                         playerData.coin += quest.reward;
                         updateUI();
                         saveGame();
-                        setTimeout(() => {
-                            alert(`Tebrikler! "${quest.title}" görevi tamamlandı. +${quest.reward} Coin kazandın! Yarın tekrar bekleriz.`);
-                        }, 100);
                     }
                 }
 
@@ -435,7 +503,7 @@ function initGameEngine() {
         if (images[bgKey]) {
             ctx.drawImage(images[bgKey], 0, 0, canvas.width, canvas.height);
         } else {
-            ctx.fillStyle = mapInfo.backgroundColor;
+            ctx.fillStyle = mapInfo.backgroundColor || '#333';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -459,11 +527,8 @@ function initGameEngine() {
                     
                     const cafeBtn = document.getElementById('cafe-btn');
                     if (cafeBtn) {
-                        if (currentMap === 'kafe') {
-                            cafeBtn.classList.remove('hidden');
-                        } else {
-                            cafeBtn.classList.add('hidden');
-                        }
+                        if (currentMap === 'kafe') cafeBtn.classList.remove('hidden');
+                        else cafeBtn.classList.add('hidden');
                     }
 
                     const nextMap = mapsData[currentMap];
@@ -512,27 +577,21 @@ function initGameEngine() {
             ctx.fillText(npc.name, npc.x, npc.y - 150);
         }
 
-        // Diğer Çevrimiçi Oyuncuları Çiz (Yön Destekli)
+        // Diğer Oyuncuları Çiz
         for (let id in onlinePlayers) {
             const p = onlinePlayers[id];
             if (p.id !== socket.id && p.currentMap === currentMap) {
                 ctx.save();
                 ctx.translate(p.x, p.y);
-                if (p.facing === 'left') {
-                    ctx.scale(-1, 1);
-                }
+                if (p.facing === 'left') ctx.scale(-1, 1);
 
                 if (images['player']) {
                     ctx.drawImage(images['player'], -48, -140, 96, 144);
-                    
                     for (let type in p.equipped) {
                         const eqId = p.equipped[type];
                         if (eqId && images['item_' + eqId]) {
-                            if (type === 'sapka') {
-                                ctx.drawImage(images['item_' + eqId], -30, -130, 60, 60);
-                            } else if (type === 'gozluk') {
-                                ctx.drawImage(images['item_' + eqId], -14, -98, 28, 28);
-                            }
+                            if (type === 'sapka') ctx.drawImage(images['item_' + eqId], -30, -130, 60, 60);
+                            else if (type === 'gozluk') ctx.drawImage(images['item_' + eqId], -14, -98, 28, 28);
                         }
                     }
                 } else {
@@ -554,26 +613,18 @@ function initGameEngine() {
             }
         }
 
-        // Kendi Karakterini Çiz (Yön Destekli)
+        // Kendi Karakterini Çiz
         ctx.save();
         ctx.translate(playerData.x, playerData.y);
-        if (playerData.facing === 'left') {
-            ctx.scale(-1, 1);
-        }
+        if (playerData.facing === 'left') ctx.scale(-1, 1);
 
         if (images['player']) {
             ctx.drawImage(images['player'], -48, -140, 96, 144);
-            
             for (let type in playerData.equipped) {
                 const equippedId = playerData.equipped[type];
                 if (equippedId && images['item_' + equippedId]) {
-                    if (type === 'sapka') {
-                        ctx.drawImage(images['item_' + equippedId], -30, -130, 60, 60);
-                    } else if (type === 'gozluk') {
-                        ctx.drawImage(images['item_' + equippedId], -14, -98, 28, 28);
-                    } else {
-                        ctx.drawImage(images['item_' + equippedId], -48, -140, 96, 144);
-                    }
+                    if (type === 'sapka') ctx.drawImage(images['item_' + equippedId], -30, -130, 60, 60);
+                    else if (type === 'gozluk') ctx.drawImage(images['item_' + equippedId], -14, -98, 28, 28);
                 }
             }
         } else {

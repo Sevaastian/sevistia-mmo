@@ -19,7 +19,6 @@ let players = {};
 io.on('connection', (socket) => {
     console.log(`Bir oyuncu bağlandı: ${socket.id}`);
 
-    // Oyuncu oyuna katıldığında
     socket.on('join_game', (playerData) => {
         players[socket.id] = {
             id: socket.id,
@@ -27,6 +26,7 @@ io.on('connection', (socket) => {
             skinColor: playerData.skinColor,
             x: playerData.x,
             y: playerData.y,
+            facing: playerData.facing || 'right',
             currentMap: playerData.currentMap,
             equipped: playerData.equipped,
             dialogue: null
@@ -34,18 +34,17 @@ io.on('connection', (socket) => {
         io.emit('update_players', players);
     });
 
-    // Oyuncu hareket ettiğinde
     socket.on('player_move', (data) => {
         if (players[socket.id]) {
             players[socket.id].x = data.x;
             players[socket.id].y = data.y;
+            players[socket.id].facing = data.facing;
             players[socket.id].currentMap = data.currentMap;
             players[socket.id].equipped = data.equipped;
             io.emit('update_players', players);
         }
     });
 
-    // Sohbet mesajı gönderildiğinde
     socket.on('send_chat', (message) => {
         if (players[socket.id]) {
             players[socket.id].dialogue = { text: message, timer: 240 };
@@ -53,7 +52,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Oyuncu çıktığında
     socket.on('disconnect', () => {
         console.log(`Oyuncu ayrıldı: ${socket.id}`);
         delete players[socket.id];
