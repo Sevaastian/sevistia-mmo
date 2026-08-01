@@ -19,6 +19,7 @@ let players = {};
 io.on('connection', (socket) => {
     console.log(`Bir oyuncu bağlandı: ${socket.id}`);
 
+    // Oyuncu oyuna katıldığında
     socket.on('join_game', (playerData) => {
         players[socket.id] = {
             id: socket.id,
@@ -33,6 +34,7 @@ io.on('connection', (socket) => {
         io.emit('update_players', players);
     });
 
+    // Oyuncu hareket ettiğinde
     socket.on('player_move', (data) => {
         if (players[socket.id]) {
             players[socket.id].x = data.x;
@@ -43,7 +45,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // YENİ: Canlı Sohbet (Chat) Olayı
+    // Sohbet mesajı gönderildiğinde
     socket.on('send_chat', (message) => {
         if (players[socket.id]) {
             players[socket.id].dialogue = { text: message, timer: 240 };
@@ -51,6 +53,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Oyuncu çıktığında
     socket.on('disconnect', () => {
         console.log(`Oyuncu ayrıldı: ${socket.id}`);
         delete players[socket.id];
@@ -58,6 +61,7 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log('🚀 Sevistia Multiplayer Sunucusu çalışıyor!');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Sevistia Multiplayer Sunucusu ${PORT} portunda çalışıyor!`);
 });

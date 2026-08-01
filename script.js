@@ -516,7 +516,6 @@ function initGameEngine() {
                 if (images['player']) {
                     ctx.drawImage(images['player'], p.x - 48, p.y - 140, 96, 144);
                     
-                    // Diğer oyuncunun giysilerini çiz
                     for (let type in p.equipped) {
                         const eqId = p.equipped[type];
                         if (eqId && images['item_' + eqId]) {
@@ -531,10 +530,17 @@ function initGameEngine() {
                     ctx.fillStyle = p.skinColor || '#f1c40f';
                     ctx.fillRect(p.x - 20, p.y - 20, 40, 40);
                 }
-                ctx.fillStyle = '#f1c40f'; // Diğer oyuncuların ismi sarı olsun
+                ctx.fillStyle = '#f1c40f';
                 ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(p.name, p.x, p.y - 150);
+
+                // BURASI ÇOK ÖNEMLİ: Diğer oyuncunun chat balonunu çiz!
+                if (p.dialogue) {
+                    drawBubble(p.dialogue.text, p.x, p.y - 180);
+                    p.dialogue.timer--;
+                    if (p.dialogue.timer <= 0) p.dialogue = null;
+                }
             }
         }
 
