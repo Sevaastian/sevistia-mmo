@@ -156,35 +156,13 @@ async function startGameEngineAndAssets() {
         itemsData = await itemsRes.json();
         questsData = await questsRes.json();
 
-        // Yeni Sahil haritasını ekle (Eğer maps.json'da yoksa otomatik destekler)
-        if (!mapsData['sahil']) {
-            mapsData['sahil'] = {
-                id: "sahil",
-                name: "Güneşli Sahil",
-                backgroundColor: "#3498db",
-                spawnX: 400,
-                spawnY: 400,
-                doors: [
-                    { targetMap: "meydan", x: 50, y: 350, width: 80, height: 100, label: "Meydana Dön" }
-                ]
-            };
-        }
-
-        // Meydana Sahile açılan kapı ekleyelim (Eğer kapı yoksa)
-        if (mapsData['meydan'] && mapsData['meydan'].doors) {
-            let sahilKapisiVar = mapsData['meydan'].doors.some(d => d.targetMap === 'sahil');
-            if (!sahilKapisiVar) {
-                mapsData['meydan'].doors.push({ targetMap: "sahil", x: 700, y: 100, width: 90, height: 110, label: "Sahile Git" });
-            }
-        }
-
         const imagePromises = [
             loadImage('player', 'assets/player/player.png'),
             loadImage('muhtar', 'assets/npc/muhtar.png'),
             loadImage('tuccar', 'assets/npc/tuccar.png'),
             loadImage('bg_meydan', 'assets/maps/meydan.jpg'),
             loadImage('bg_kafe', 'assets/maps/kafe.jpg'),
-            loadImage('bg_sahil', 'assets/maps/sahil.jpg') // Sahil arkaplanı
+            loadImage('bg_sahil', 'assets/maps/sahil.jpg')
         ];
 
         itemsData.forEach(item => {
@@ -240,9 +218,6 @@ function earnCoinFromCafe() {
     playerData.dialogue = { text: `☕ Kahve satıldı! +${kazanilanCoin} Coin`, timer: 120 };
 }
 
-// ==========================================
-// YENİ ÖZELLİK: PROFİL VE GÜNLÜK ÖDÜL MENÜLERİ
-// ==========================================
 function toggleProfile() {
     let modal = document.getElementById('profile-modal');
     if (!modal) {
@@ -387,7 +362,6 @@ function initGameEngine() {
     locationUI.style.textShadow = "2px 2px 4px black";
     document.getElementById('game-screen').appendChild(locationUI);
 
-    // Sağ üst menüye profil ve günlük ödül butonları ekleyelim
     const uiRight = document.getElementById('game-ui-right');
     if (uiRight && !document.getElementById('profile-btn')) {
         uiRight.innerHTML += `
@@ -464,21 +438,32 @@ function initGameEngine() {
     });
 
     function gameLoop() {
-    const mapInfo = mapsData[currentMap];
+        const mapInfo = mapsData[currentMap];
 
-    if (locationUI.innerText !== `📍 ${mapInfo.name}`) {
-        locationUI.innerText = `📍 ${mapInfo.name}`;
-    }
+        if (locationUI.innerText !== `📍 ${mapInfo.name}`) {
+            locationUI.innerText = `📍 ${mapInfo.name}`;
+        }
 
-    // YENİ: Karakterin gökyüzüne / binaların tepesine çıkmasını engelleyen cadde sınırı!
-    if (playerData.targetY < 450) {
-        playerData.targetY = 450;
-    }
+        if (playerData.isMoving) {
+            // Kapıya tıklandıysa cadde sınırına takılmasın, kapıya rahatça gitsin
+            let clickingDoor = false;
+            if (mapInfo.doors) {
+                for (let d of mapInfo.doors) {
+                    if (playerData.targetX >= d.x && playerData.targetX <= d.x + d.width &&
+                        playerData.targetY >= d.y && playerData.targetY <= d.y + d.height) {
+                        clickingDoor = true;
+                    }
+                }
+            }
 
-    if (playerData.isMoving) {
-        const dx = playerData.targetX - playerData.x;
-        const dy = playerData.targetY - playerData.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+            // Kapıya tıklanmadıysa karakterin yukarı çıkmasını engelle (Cadde sınırı)
+            if (!clickingDoor && playerData.targetY < 430) {
+                playerData.targetY = 430;
+            }
+
+            const dx = playerData.targetX - playerData.x;
+            const dy = playerData.targetY - playerData.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (Math.abs(dx) > 1) {
                 playerData.facing = dx < 0 ? 'left' : 'right';
