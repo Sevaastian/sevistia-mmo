@@ -88,3 +88,8 @@ input[type="text"], select, input[type="color"] { width: 100%; padding: 10px; ma
 .menu-btn-group button {
     flex: 1;
 }
+
+/* Sanalika Tarzı Üst ve Alt Çerçeve Vibe'ı */
+#game-screen {
+    background-color: #1a1a1a;
+}
